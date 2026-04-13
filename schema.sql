@@ -1,0 +1,71 @@
+create table if not exists users (
+  id uuid primary key,
+  phone text,
+  email text,
+  telegram_chat_id text,
+  telegram_username text,
+  full_name text,
+  consent_status text default 'unknown',
+  source_channel text,
+  created_at timestamptz default now()
+);
+
+create table if not exists properties (
+  id uuid primary key,
+  user_id uuid references users(id),
+  property_type text not null default 'apartment',
+  city text,
+  district text,
+  ward text,
+  project_name text,
+  block_name text,
+  area_net numeric,
+  bedrooms int,
+  bathrooms int,
+  floor_no int,
+  facing text,
+  furnishing_level text,
+  legal_status text,
+  occupancy_status text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists sale_calculations (
+  id uuid primary key,
+  property_id uuid references properties(id),
+  session_id text unique,
+  input_sale_price numeric,
+  input_brokerage_mode text,
+  input_brokerage_value numeric,
+  input_loan_outstanding numeric,
+  target_net_proceeds numeric,
+  estimated_pit_tax numeric,
+  estimated_brokerage_fee numeric,
+  estimated_notary_fee numeric,
+  estimated_other_costs numeric,
+  estimated_net_proceeds numeric,
+  result_json jsonb,
+  created_at timestamptz default now()
+);
+
+create table if not exists lead_events (
+  id bigserial primary key,
+  session_id text,
+  user_id uuid,
+  property_id uuid,
+  event_type text not null,
+  event_value text,
+  event_meta_json jsonb,
+  created_at timestamptz default now()
+);
+
+create table if not exists telegram_links (
+  id bigserial primary key,
+  session_id text not null,
+  link_token text not null unique,
+  user_id uuid,
+  telegram_chat_id text,
+  linked_at timestamptz,
+  status text default 'pending'
+);
