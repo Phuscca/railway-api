@@ -8,7 +8,7 @@ async def insert_lead_event(session_id: str | None, property_id: str | None, eve
     async with pool.acquire() as conn:
         await conn.execute(
             '''
-            insert into lead_events (session_id, property_id, event_type, event_value, event_meta_json)
+            insert into bdstt_lead_events (session_id, property_id, event_type, event_value, event_meta_json)
             values ($1, $2::uuid, $3, $4, $5::jsonb)
             ''',
             session_id,
@@ -28,7 +28,7 @@ async def create_property_and_calculation(payload, summary: dict, scenarios: lis
         async with conn.transaction():
             await conn.execute(
                 '''
-                insert into properties (
+                insert into bdstt_properties (
                   id, property_type, district, project_name, area_net, bedrooms
                 ) values ($1::uuid, 'apartment', $2, $3, $4, $5)
                 ''',
@@ -41,7 +41,7 @@ async def create_property_and_calculation(payload, summary: dict, scenarios: lis
 
             await conn.execute(
                 '''
-                insert into sale_calculations (
+                insert into bdstt_sale_calculations (
                   id, property_id, session_id, input_sale_price, input_brokerage_mode,
                   input_brokerage_value, input_loan_outstanding, target_net_proceeds,
                   estimated_pit_tax, estimated_brokerage_fee, estimated_notary_fee,
@@ -82,13 +82,13 @@ async def create_telegram_link(session_id: str):
     token = f'tg_{uuid4().hex[:10]}'
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            'select property_id from sale_calculations where session_id = $1 order by created_at desc limit 1',
+            'select property_id from bdstt_sale_calculations where session_id = $1 order by created_at desc limit 1',
             session_id,
         )
         property_id = str(row['property_id']) if row and row['property_id'] else None
         await conn.execute(
             '''
-            insert into telegram_links (session_id, link_token, status)
+            insert into bdstt_telegram_links (session_id, link_token, status)
             values ($1, $2, 'pending')
             ''',
             session_id,
@@ -104,7 +104,7 @@ async def confirm_telegram_link(link_token: str, telegram_chat_id: str, telegram
         async with conn.transaction():
             link = await conn.fetchrow(
                 '''
-                select session_id from telegram_links
+                select session_id from bdstt_telegram_links
                 where link_token = $1 and status = 'pending'
                 limit 1
                 ''',
@@ -115,7 +115,7 @@ async def confirm_telegram_link(link_token: str, telegram_chat_id: str, telegram
 
             await conn.execute(
                 '''
-                update telegram_links
+                update bdstt_telegram_links
                 set telegram_chat_id = $1, linked_at = now(), status = 'linked'
                 where link_token = $2
                 ''',
@@ -124,7 +124,7 @@ async def confirm_telegram_link(link_token: str, telegram_chat_id: str, telegram
             )
 
             calc = await conn.fetchrow(
-                'select property_id from sale_calculations where session_id = $1 order by created_at desc limit 1',
+                'select property_id from bdstt_sale_calculations where session_id = $1 order by created_at desc limit 1',
                 link['session_id'],
             )
             property_id = str(calc['property_id']) if calc and calc['property_id'] else None
@@ -139,7 +139,7 @@ async def admin_overview():
         rows = await conn.fetch(
             '''
             select event_type, count(*) as total
-            from lead_events
+            from bdstt_lead_events
             group by event_type
             '''
         )
