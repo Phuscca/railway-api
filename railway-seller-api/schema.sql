@@ -1,4 +1,4 @@
-create table if not exists users (
+create table if not exists bdstt_users (
   id uuid primary key,
   phone text,
   email text,
@@ -10,9 +10,9 @@ create table if not exists users (
   created_at timestamptz default now()
 );
 
-create table if not exists properties (
+create table if not exists bdstt_properties (
   id uuid primary key,
-  user_id uuid references users(id),
+  user_id uuid references bdstt_users(id),
   property_type text not null default 'apartment',
   city text,
   district text,
@@ -31,9 +31,9 @@ create table if not exists properties (
   updated_at timestamptz default now()
 );
 
-create table if not exists sale_calculations (
+create table if not exists bdstt_sale_calculations (
   id uuid primary key,
-  property_id uuid references properties(id),
+  property_id uuid references bdstt_properties(id),
   session_id text unique,
   input_sale_price numeric,
   input_brokerage_mode text,
@@ -49,7 +49,7 @@ create table if not exists sale_calculations (
   created_at timestamptz default now()
 );
 
-create table if not exists lead_events (
+create table if not exists bdstt_lead_events (
   id bigserial primary key,
   session_id text,
   user_id uuid,
@@ -60,7 +60,7 @@ create table if not exists lead_events (
   created_at timestamptz default now()
 );
 
-create table if not exists telegram_links (
+create table if not exists bdstt_telegram_links (
   id bigserial primary key,
   session_id text not null,
   link_token text not null unique,
