@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import connect_db, close_db, get_pool
-from app.routers import seller, admin, conversation, estimate, report
+from app.routers import seller, admin, conversation, estimate, report, tools
 import traceback
 
 app = FastAPI(title="BDSTT API", version="0.3.0")
@@ -19,7 +19,7 @@ app.add_middleware(
         "http://localhost:8080",
     ],
     allow_credentials=False,
-    allow_methods=["POST", "GET"],
+    allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["Content-Type", "x-api-key"],
 )
 
@@ -54,6 +54,7 @@ app.include_router(admin.router)          # /v1/admin/*   — cần API key
 app.include_router(conversation.router)   # /v1/conversation/* — CÔNG KHAI
 app.include_router(estimate.router)    # /v1/estimate/* — CÔNG KHAI
 app.include_router(report.router)   # /v1/report/* — CÔNG KHAI
+app.include_router(tools.router)      # /v1/tools/* — CÔNG KHAI
 
 
 @app.get("/health")
