@@ -390,9 +390,9 @@ async def report_context(req: ContextRequest, request: Request):
         project_infra = []
         if slug:
             pi_rows = await conn.fetch(
-                """SELECT i.name, i.category, i.lat, i.lon, pi.distance_km
+                """SELECT i.name, i.name_vi, i.category, i.lat, i.lon, pi.distance_km
                    FROM project_infrastructure pi
-                   JOIN infrastructure i ON i.id = pi.infrastructure_id
+                   JOIN infrastructure i ON i.id = pi.infra_id
                    WHERE pi.project_slug = $1
                    ORDER BY pi.distance_km ASC
                    LIMIT 50""",
@@ -400,7 +400,7 @@ async def report_context(req: ContextRequest, request: Request):
             )
             for r in pi_rows:
                 project_infra.append({
-                    "name": r["name"],
+                    "name": r["name_vi"] or r["name"],
                     "category": r["category"],
                     "lat": float(r["lat"]) if r["lat"] else None,
                     "lon": float(r["lon"]) if r["lon"] else None,
