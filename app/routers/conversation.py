@@ -48,7 +48,7 @@ ALLOWED_FIELDS = {
         'recommended_areas', 'area_clicked',
     },
     'chu_nha': {
-        'flow', 'project_name', 'bedrooms', 'area_sqm', 'building',
+        'flow', 'project_name', 'city', 'district', 'bedrooms', 'area_sqm', 'building',
         'purchase_price', 'purchase_month', 'purchase_year',
         'current_status', 'actual_rent', 'furnishing', 'estimated_rent',
         'sell_intention', 'expected_sell_price', 'sell_reason',

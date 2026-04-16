@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import connect_db, close_db, get_pool
-from app.routers import seller, admin, conversation
+from app.routers import seller, admin, conversation, estimate
 import traceback
 
 app = FastAPI(title="BDSTT API", version="0.3.0")
@@ -52,6 +52,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(seller.router)         # /v1/seller/*  — cần API key
 app.include_router(admin.router)          # /v1/admin/*   — cần API key
 app.include_router(conversation.router)   # /v1/conversation/* — CÔNG KHAI
+app.include_router(estimate.router)    # /v1/estimate/* — CÔNG KHAI
 
 
 @app.get("/health")
