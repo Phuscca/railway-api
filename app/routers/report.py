@@ -409,7 +409,7 @@ async def report_context(req: ContextRequest, request: Request):
 
         # News
         news_rows = await conn.fetch(
-            """SELECT title, url, pub_date, source
+            """SELECT title, link, pub_date, source_name
                FROM news_articles
                WHERE (title ILIKE $1 OR title ILIKE $2)
                ORDER BY pub_date DESC
@@ -421,9 +421,9 @@ async def report_context(req: ContextRequest, request: Request):
         for r in news_rows:
             news.append({
                 "title": r["title"],
-                "url": r["url"],
+                "url": r["link"] if r["link"] else "",
                 "date": r["pub_date"].strftime("%Y-%m-%d") if r["pub_date"] else None,
-                "source": r["source"] if r["source"] else "",
+                "source": r["source_name"] if r["source_name"] else "",
             })
 
     return {
