@@ -300,7 +300,7 @@ async def report_market(req: MarketRequest, request: Request):
         # Rental data
         rental_row = await conn.fetchrow(
             """SELECT COUNT(*) as cnt,
-                      AVG(price_vnd) as avg_rent,
+                      AVG(price) as avg_rent,
                       AVG(area_m2) as avg_area
                FROM rental_listings
                WHERE district = $1""",
@@ -357,7 +357,7 @@ async def report_context(req: ContextRequest, request: Request):
 
         # Infrastructure theo quận
         infra_rows = await conn.fetch(
-            """SELECT name, category, lat, lon, address, district
+            """SELECT name, name_vi, category, subcategory, lat, lon, district
                FROM infrastructure
                WHERE district = $1 AND city = $2
                ORDER BY category
@@ -368,11 +368,11 @@ async def report_context(req: ContextRequest, request: Request):
         infrastructure = []
         for r in infra_rows:
             item = {
-                "name": r["name"],
+                "name": r["name_vi"] or r["name"],
                 "category": r["category"],
+                "subcategory": r["subcategory"] if r["subcategory"] else "",
                 "lat": float(r["lat"]) if r["lat"] else None,
                 "lon": float(r["lon"]) if r["lon"] else None,
-                "address": r["address"] if r["address"] else "",
             }
             if lat and lon and item["lat"] and item["lon"]:
                 dlat = math.radians(item["lat"] - lat)
