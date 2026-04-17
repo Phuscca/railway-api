@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from app.db.database import get_pool
@@ -99,12 +100,12 @@ async def affordability(req: AffordabilityRequest):
 
 class ToolLogRequest(BaseModel):
     tool_name: str = Field(..., max_length=50)
-    session_id: str = Field(None, max_length=100)
-    input_data: dict = Field(None)
-    result_data: dict = Field(None)
+    session_id: Optional[str] = Field(None, max_length=100)
+    input_data: Optional[dict] = Field(None)
+    result_data: Optional[dict] = Field(None)
     source: str = Field("direct", max_length=20)
-    city: str = Field(None, max_length=50)
-    district: str = Field(None, max_length=50)
+    city: Optional[str] = Field(None, max_length=50)
+    district: Optional[str] = Field(None, max_length=50)
 
 @router.post("/log")
 async def log_tool_usage(req: ToolLogRequest, request: Request):
