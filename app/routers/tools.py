@@ -11,9 +11,9 @@ router = APIRouter(prefix="/v1/tools", tags=["tools"])
 
 class AffordabilityRequest(BaseModel):
     budget_vnd: float = Field(..., gt=0, description="Ngân sách tối đa (VNĐ)")
-    city: str = Field(None, description="Lọc theo thành phố (optional)")
+    city: Optional[str] = Field(None, description="Lọc theo thành phố (optional)")
     min_area: float = Field(45.0, gt=10, le=300, description="Diện tích tối thiểu m²")
-    bedrooms: str = Field(None, description="Số phòng ngủ (optional)")
+    bedrooms: Optional[str] = Field(None, description="Số phòng ngủ (optional)")
 
 @router.post("/affordability")
 async def affordability(req: AffordabilityRequest):
