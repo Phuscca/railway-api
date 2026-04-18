@@ -554,3 +554,117 @@ async def transform_listings():
             inserted += 1
 
     return {"transformed": inserted, "skipped": skipped}
+
+
+# ── Rental → Expectation Signal Backfill ──────────────────
+
+@router.post("/transform-rentals")
+async def transform_rentals():
+    """Backfill: convert rental_listings → rental_ask signals"""
+    pool = get_pool()
+    BATCH = 5000
+
+    async with pool.acquire() as conn:
+        # Get already-transformed rental IDs
+        existing_rows = await conn.fetch(
+            "SELECT DISTINCT log_id FROM expectation_signals WHERE signal_type = 'rental_ask' AND log_id IS NOT NULL"
+        )
+        existing_ids = {r["log_id"] for r in existing_rows}
+
+        # Fetch rental listings not yet transformed
+        rows = await conn.fetch(
+            """
+            SELECT id, district, region, category, price, price_per_m2,
+                   area_m2, rooms, source, first_seen, title
+            FROM rental_listings
+            WHERE price > 0
+              AND district IS NOT NULL AND district != ''
+            ORDER BY id
+            LIMIT $1
+            """,
+            BATCH * 2
+        )
+
+        inserted = 0
+        skipped = 0
+
+        for r in rows:
+            if r["id"] in existing_ids:
+                skipped += 1
+                continue
+            if inserted >= BATCH:
+                break
+
+            # Map region → city
+            city = None
+            if r["region"]:
+                reg = r["region"].lower()
+                if "hồ chí minh" in reg or "hcm" in reg or "sài gòn" in reg:
+                    city = "Hồ Chí Minh"
+                elif "hà nội" in reg or "hanoi" in reg:
+                    city = "Hà Nội"
+                else:
+                    city = r["region"]
+
+            ptype = _normalize_property_type(r["category"])
+
+            price_m2 = r["price_per_m2"]
+            area = r["area_m2"]
+            if (not price_m2 or price_m2 <= 0) and area and area > 0:
+                price_m2 = round(r["price"] / area)
+
+            has_loc = bool(r["district"] and city)
+            has_detail = bool(area and area > 0)
+            has_fin = False
+
+            drop = []
+            if not city:              drop.append("city")
+            if not r["district"]:     drop.append("district")
+            if not area or area <= 0: drop.append("area_m2")
+            if not r["rooms"]:        drop.append("bedrooms")
+            if not ptype:             drop.append("property_type")
+
+            if len(drop) == 0:
+                comp = "full"
+            elif len(drop) <= 2:
+                comp = "partial"
+            else:
+                comp = "minimal"
+
+            month_bucket = (
+                r["first_seen"].replace(day=1).date()
+                if r["first_seen"] else date.today().replace(day=1)
+            )
+
+            await conn.execute(
+                """
+                INSERT INTO expectation_signals
+                    (log_id, signal_type, tool_source, city, district, project_name,
+                     property_type, bedrooms, area_m2, price_vnd, price_per_m2,
+                     confidence_score, completeness, has_location, has_property_detail,
+                     has_financial_context, drop_fields, source, session_id, month_bucket)
+                VALUES
+                    ($1, 'rental_ask', $2, $3, $4, NULL,
+                     $5, $6, $7, $8, $9,
+                     NULL, $10, $11, $12,
+                     $13, $14, 'crawl', NULL, $15)
+                """,
+                r["id"],
+                r["source"] or "chotot",
+                city,
+                r["district"],
+                ptype,
+                r["rooms"] if r["rooms"] else None,
+                area if area and area > 0 else None,
+                r["price"],
+                price_m2 if price_m2 and price_m2 > 0 else None,
+                comp,
+                has_loc,
+                has_detail,
+                has_fin,
+                drop,
+                month_bucket,
+            )
+            inserted += 1
+
+    return {"transformed": inserted, "skipped": skipped}
